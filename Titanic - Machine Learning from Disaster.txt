@@ -1,0 +1,219 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.model_selection import train_test_split
+
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.naive_bayes import GaussianNB
+from sklearn.svm import SVC
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import GradientBoostingClassifier
+from sklearn.linear_model import LogisticRegression
+
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import confusion_matrix
+from sklearn.metrics import classification_report
+
+
+
+train = pd.read_csv(r'D:\data analysis excel\Data science bilarabi\Titanic - Machine Learning from Disaster\train.csv')
+test = pd.read_csv(r'D:\data analysis excel\Data science bilarabi\Titanic - Machine Learning from Disaster\test.csv')
+
+
+
+train
+
+
+train.info()
+
+nu = train.isnull().sum()
+
+#لمعرفة هل البيانات ناقصة ام لا عن طريق الرسم البياني
+sns.heatmap(train.isnull())
+
+
+# لمعرفة الاعمدة الناقصة للبيانات
+
+nu[nu>0]
+
+
+#لان الكود حيتنفذ لاكتر من داتا سيت فقمنا كتبنا الكود في فينشن
+def clean (d):
+
+    d.drop(['Name','Cabin','Fare','Ticket','Embarked'],axis=1,inplace = True)
+
+#drop لحذف البيانات
+# axis=1 الحذف علي مستوي الاعمدة لان =1 اذا كان = 0 حيكون علي مستوي الصفوف
+#inplace = True التنفيذ علي كافة البيانات
+
+    d.Age=d.Age.fillna(d.Age.median()) #لملا البيانات الفارغة في عمود العمر 
+
+#fillna دالة ملا الخانة الفارغة
+#train.Age.median() لملا العمود الفارغ و تم استخدام الوسيط و يفضل ذالك في الاعمار ان تملا بدالة الوسيط
+
+
+
+    d.dropna()  #لحذف السطور التي تحتوي علي خانة فارغة
+    return d
+    
+
+clean(train)
+
+
+clean(test)
+
+
+#لمعرفة العلاقة بين البيانات يتم استخدام الدالة
+# corr دالة لمعرف العلاقة بين البيانات
+#numeric_only=True حتي تنفذ علي البيانات الرقمية و الا سيطلع خطا
+
+cora = train.corr(numeric_only=True)
+
+sns.heatmap(cora, annot= True,fmt= '.1f', linewidths= .5)
+
+#لاظهار المخطط البياني
+# annot= True لاظهار العلاقة بالارقام
+#fmt= '.1f' لتقريب العلامات العشرية
+#linewidths= .5 لجعل مسافة بين المربعات
+
+
+
+
+#معرفة كم واحد عاش و كم واحد مات
+
+train.Survived.value_counts()
+
+
+#لمعرفة عدد الركاب في طورتا
+
+train.Sex.value_counts().plot.pie(autopct='%0.2f%%')
+#لرسم الطورتا
+# plot.pie دالة رسم الطورتا
+#autopct='%0.2f' لكتابة الارقام داخل الطورتا
+#autopct='%0.2f%%' يتم وضع علامتين في الماية في اخر رمز الكود حتي يتم تحويل الارقام الي في المية
+
+
+
+#لمعرفة نسبة الناجين من غير الناجين بناءا علي الاناث و الذكور
+
+sns.countplot(x=train.Sex ,hue=train.Survived)
+
+
+
+#لمعرفة نسبة الناجين من غير الناجين بناءا علي الكلاس
+
+sns.countplot(x=train.Pclass ,hue=train.Survived)
+
+
+sns.histplot(train.Age)
+
+
+
+
+from sklearn.preprocessing import LabelEncoder as lab
+
+#اسناد القيم الحرفية لمتغير و الغير حرفية لمتغير
+obj = train.select_dtypes(include='object')
+non_obj = train.select_dtypes(exclude='object')
+
+
+
+#تحويل البيانات الحرفية الي رقمية عن طريق دالة فوووور
+for i in range(0,obj.shape[1]):  
+    obj.iloc[ : , i] = lab.fit_transform(obj.iloc[ : , i], obj.iloc[ : , i])
+
+
+#تجميع القيم المحولة من بيانات حرفية الؤي بيانات رقمية مع باقي البيانات
+
+train= pd.concat([ obj, non_obj],axis = 1)
+train
+
+
+
+#اسناد القيم الحرفية لمتغير و الغير حرفية لمتغير
+obj_test = test.select_dtypes(include='object')
+non_obj_test =test.select_dtypes(exclude='object')
+
+
+#تحويل البيانات الحرفية الي رقمية عن طريق دالة فوووور
+for i in range(0,obj_test.shape[1]):  
+    obj_test.iloc[ : , i] = lab.fit_transform(obj_test.iloc[ : , i], obj_test.iloc[ : , i])
+
+
+#تجميع القيم المحولة من بيانات حرفية الؤي بيانات رقمية مع باقي البيانات
+
+test= pd.concat([ obj_test, non_obj_test],axis = 1)
+test
+
+
+x=train.drop(['Survived'],axis = 1)
+y=train['Survived']
+
+
+
+x_train,x_test,y_train,y_test = train_test_split(x,y,train_size = .8)
+
+
+accuracies = []
+
+
+
+def all(model):
+    model.fit(x_train,y_train)
+    pre = model.predict(x_test)
+    accuracy = accuracy_score(pre,y_test)
+    print('Accuracy = ' , accuracy )
+    accuracies.append(accuracy)
+
+
+model1 = LogisticRegression()
+all(model1)
+
+
+model2 = RandomForestClassifier()
+all(model2)
+
+
+model3= GradientBoostingClassifier()
+all(model3)
+
+
+model4= DecisionTreeClassifier()
+all(model4)
+
+
+model5=KNeighborsClassifier()
+all(model5)
+
+
+model6= GaussianNB()
+all(model6)
+
+
+model7=SVC()
+all(model7)
+
+Algorithms =['LogisticRegression','RandomForestClassifier','GradientBoostingClassifier','DecisionTreeClassifier','KNeighborsClassifier','GaussianNB','SVC']
+
+
+new = pd.DataFrame({'Algorithms':Algorithms,'Accuracies':accuracies})
+
+new
+
+
+modelx=GradientBoostingClassifier()        
+modelx.fit(x_train,y_train)
+
+
+lpre=modelx.predict(test)
+
+
+final=test.PassengerId
+
+
+new_dataframe = pd.DataFrame({'PassengerId':final,'Survived':lpre})
+
+
+new_dataframe.to_csv(r'D:\data analysis excel\Data science bilarabi\Titanic - Machine Learning from Disaster\Submission.csv',index = False)
